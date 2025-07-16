@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: eduspark_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 222444666888
+      MYSQL_DATABASE: eduspark
+      MYSQL_USER: eduspark
+      MYSQL_PASSWORD: 222444666888
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: eduspark_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # FastAPI 应用
+  backend:
+    build: .
+    container_name: eduspark_backend
+    depends_on:
+      - mysql
+      - redis
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=mysql://root:222444666888@mysql:3306/eduspark
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ./uploads:/app/uploads
+      - .:/app
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  mysql_data:
+  redis_data:
